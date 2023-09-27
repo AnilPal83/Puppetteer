@@ -28,49 +28,56 @@ const puppeteer = require('puppeteer');
       const textarea = await page.waitForSelector('textarea[data-testid="textbox"]', { visible: true });
       console.log("Text area found");
   
-      await textarea.type('how do i generate best prompt for LLama.  what is the format to use for LLama prompt?');
+      await textarea.type('how do i generate best prompt for LLama.  what is the format to use for LLama prompt?  I am particularly strugging with prompt format');
       console.log("Message typed");
 
-  
-      // Find the submit button by innerHTML
       // Wait for the submit button and click it
+      const submitButtonSelector = '#component-7';
+      await page.waitForSelector(submitButtonSelector, { visible: true });
+      await page.click(submitButtonSelector);
 
-      await page.waitForSelector('#component-7', { visible: true });
-      await page.click('#component-7');
-      // const submitButtonSelector = 'button:has-text("Submit")';
-      // await page.waitForSelector(submitButtonSelector, { visible: true });
-      // const submitButton = await page.$(submitButtonSelector);
-      // console.log("submit button found")
+      console.log("Submit button clicked");  
 
+          // initial Wait for 10 seconds (adjust the duration as needed)
+      await page.evaluate(() => {
+        return new Promise(resolve => {
+          setTimeout(resolve, 10000); // 10000 milliseconds = 10 seconds
+        });
+      });
 
-      if (submitButton) {
-        await submitButton.click();
-        console.log("Submit button clicked");
-      } else {
-        console.error("Submit button not found.");
-      }
-      const pageHTML = await page.content();
-      console.log(pageHTML);
-    
-    // Wait for the specific bot message to appear
-    // Wait for the specific bot message to appear
       const botMessageSelector = '.message-wrap .message.bot.latest';
-      console.log('Waiting for bot message...');
-      await page.waitForSelector(botMessageSelector, { visible: true });
-      console.log('Bot message found.');
+      let lastMessageText = '';
 
-      // Extract and log the text content of the bot message
-      const botMessage = await page.$(botMessageSelector);
-      const messageText = await botMessage.evaluate(node => node.textContent);
-      console.log('Bot Message:', messageText);
+      // Function to periodically check for updates and collect the message
+      async function checkAndUpdateMessage() {
+        while (true) {
+          // Wait for 5 seconds before checking for updates (adjust as needed)
+          await page.evaluate(() => {
+            return new Promise(resolve => {
+              setTimeout(resolve, 5000); // 10000 milliseconds = 10 seconds
+            });
+          });
 
-      // You can add your logic here to process the message as needed
-      // You can perform further actions with the button here
-      // For example, you can click it:
-      // const button = await page.$x(buttonXPath);
-      // if (button.length > 0) {
-      //   await button[0].click();
-      // }
+          // Check the current message text
+          const botMessage = await page.$(botMessageSelector);
+          const messageText = await botMessage.evaluate(node => node.textContent);
+
+          if (messageText === lastMessageText) {
+            // Message has not been updated, assume it has stopped
+            console.log('Message has stopped updating. Collecting message...');
+            console.log('Bot Message:', messageText);
+            break;
+          }
+
+          // Update the last known message text
+          lastMessageText = messageText;
+        }
+      }
+
+    // Call the function to check for updates and collect the message
+      await checkAndUpdateMessage();
+
+
     } catch (error) {
       console.error('Button with innerHTML "Submit" was not found or not visible within the specified timeout.');
     }
