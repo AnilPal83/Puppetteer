@@ -25,12 +25,51 @@ const puppeteer = require('puppeteer');
       //await page.waitForXPath(buttonXPath, { visible: true, timeout: 10000 });
       //console.log('Button with innerHTML "Submit" is now in the DOM and visible.');
 
+      // Wait for the <textarea> element associated with user prompt to load
       const textarea = await page.waitForSelector('textarea[data-testid="textbox"]', { visible: true });
       console.log("Text area found");
-  
-      await textarea.type('how do i generate best prompt for LLama.  what is the format to use for LLama prompt?  I am particularly strugging with prompt format');
-      console.log("Message typed");
 
+      await textarea.type('I want to generate a perfect prompt for LLAMA LLM to convert user queries in natural langauge into SQL');
+      console.log("user prompt inserted");
+      
+      // Wait for the <span> element of advanced options and click it
+      const spanElementSelector = '.icon.svelte-s1r2yt';
+      await page.waitForSelector(spanElementSelector, { visible: true });
+      await page.click(spanElementSelector);
+      console.log("advanced options clicked");
+
+      try {
+        // Evaluate the selector in the page's context and get the textarea element
+        const sysPromptTextAreaHandle = await page.evaluateHandle(() => {
+          const labels = Array.from(document.querySelectorAll('label.svelte-1kcgrqr'));
+          for (const label of labels) {
+            const span = label.querySelector('span[data-testid="block-info"]');
+            if (span && span.textContent.trim() === 'System prompt') {
+              const textarea = label.querySelector('textarea[data-testid="textbox"]');
+              return textarea;
+            }
+          }
+          return null;
+        });
+      
+        if (sysPromptTextAreaHandle) {
+          // Clear the content of the <textarea>
+          await sysPromptTextAreaHandle.evaluate(textarea => {
+            textarea.value = ''; // Clear the value of the textarea
+          });
+      
+          // Input text into the <textarea>
+          await sysPromptTextAreaHandle.type('You are a nice bot who helps people');
+          console.log("System prompt inserted");
+        } else {
+          console.log("System prompt not found");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+      
+
+      
       // Wait for the submit button and click it
       const submitButtonSelector = '#component-7';
       await page.waitForSelector(submitButtonSelector, { visible: true });
@@ -38,7 +77,7 @@ const puppeteer = require('puppeteer');
 
       console.log("Submit button clicked");  
 
-          // initial Wait for 10 seconds (adjust the duration as needed)
+      // initial Wait for 10 seconds (adjust the duration as needed)
       await page.evaluate(() => {
         return new Promise(resolve => {
           setTimeout(resolve, 10000); // 10000 milliseconds = 10 seconds
